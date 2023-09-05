@@ -1,62 +1,37 @@
 AFRAME.registerComponent('aircraft-controls', {
   schema: {
-    verticalSpeed: { type: 'number', default: 0.1 },
+    rotationSpeed: { type: 'number', default: 1 },
+    moveSpeed: { type: 'number', default: 1 }
   },
   init: function () {
-    this.verticalDirection = 1; // 1 for moving up, -1 for moving down
-    this.verticalMovement = 0; // Amount of vertical movement
-
     this.cameraEntity = document.querySelector('#cameraRig'); // Reference to the camera entity
-
-    // Lock the pointer when entering VR mode
-    this.el.sceneEl.canvas.addEventListener('enter-vr', () => {
-      this.el.sceneEl.canvas.requestPointerLock();
-    });
-
-    // Add a light for shadow casting
-    const light = document.createElement('a-light');
-    light.setAttribute('type', 'directional');
-    light.setAttribute('position', '2 5 -3');
-    light.setAttribute('intensity', '0.5');
-    light.setAttribute('target', '#cameraRig');
-    light.setAttribute('castShadow', 'true'); // Enable shadow casting
-    this.el.sceneEl.appendChild(light);
 
     // Listen for keydown events
     window.addEventListener('keydown', this.onKeyDown.bind(this));
   },
   onKeyDown: function (event) {
-    const rotationSpeed = 0.1;
     const rotation = this.cameraEntity.getAttribute('rotation'); // Use camera entity's rotation
-
-    // Handle turning controls
-    if (event.key === 'ArrowLeft') {
-      rotation.y += rotationSpeed;
-    }
+    const position = this.cameraEntity.getAttribute('position'); // Use camera entity's position
     
-    if (event.key === 'ArrowRight') {
-      rotation.y -= rotationSpeed;
+    if (event.key === 'ArrowLeft') {
+      // Turn left
+      rotation.y += this.data.rotationSpeed;
+    } else if (event.key === 'ArrowRight') {
+      // Turn right
+      rotation.y -= this.data.rotationSpeed;
+    } else if (event.key === 'ArrowUp') {
+      // Move forward along the camera's direction
+      const angle = rotation.y * (Math.PI / 180); // Convert to radians
+      position.x -= Math.sin(angle) * this.data.moveSpeed;
+      position.z -= Math.cos(angle) * this.data.moveSpeed;
+    }
+    else if (event.key === 'ArrowDown') {
+      // Move forward along the camera's direction
+      position.y+=this.data.moveSpeed
     }
 
-    // Set the new rotation for the camera entity
+    // Set the new rotation and position for the camera entity
     this.cameraEntity.setAttribute('rotation', rotation);
-  },
-  tick: function (time, timeDelta) {
-    const verticalStep = this.data.verticalSpeed * this.verticalDirection * (timeDelta / 1000);
-
-    // Update vertical movement
-    this.verticalMovement += verticalStep;
-
-    // Change vertical direction at bounds
-    if (this.verticalMovement >= 2 || this.verticalMovement <= -2) {
-      this.verticalDirection *= -1;
-    }
-
-    // Calculate camera's new position
-    const cameraPosition = this.cameraEntity.getAttribute('position');
-    cameraPosition.y += verticalStep;
-
-    // Move the camera entity
-    this.cameraEntity.setAttribute('position', cameraPosition);
+    this.cameraEntity.setAttribute('position', position);
   }
 });
